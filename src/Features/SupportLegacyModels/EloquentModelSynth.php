@@ -186,37 +186,71 @@ class EloquentModelSynth extends Synth
         }, ARRAY_FILTER_USE_KEY);
     }
 
-    protected function loadModel($meta): ?Model
-    {
-        $class = $meta['class'];
+      // Copied from Github
+      protected function loadModel($meta): ?Model
+      {
+          $class = $meta['class'];
+  
+          // If no alias found, this returns null
+          $aliasClass = Relation::getMorphedModel($class);
+  
+          if (!is_null($aliasClass)) {
+              $class = $aliasClass;
+          }
+  
+          if (isset($meta['key'])) {
+              $model = new $class;
+  
+              if (isset($meta['connection'])) {
+                  $model->setConnection($meta['connection']);
+              }
+  
+              $query = $model->newQueryForRestoration($meta['key']);
+  
+              if (isset($meta['relations'])) {
+                  $query->with($meta['relations']);
+              }
+  
+              if ($query->first() != null)
+                  $model = $query->first();
+          } else {
+              $model = new $class();
+          }
+  
+          return $model;
+      }
 
-        // If no alias found, this returns `null`
-        $aliasClass = Relation::getMorphedModel($class);
+    // protected function loadModel($meta): ?Model
+    // {
+    //     $class = $meta['class'];
 
-        if (! is_null($aliasClass)) {
-            $class = $aliasClass;
-        }
+    //     // If no alias found, this returns `null`
+    //     $aliasClass = Relation::getMorphedModel($class);
 
-        if (isset($meta['key'])) {
-            $model = new $class;
+    //     if (! is_null($aliasClass)) {
+    //         $class = $aliasClass;
+    //     }
 
-            if (isset($meta['connection'])) {
-                $model->setConnection($meta['connection']);
-            }
+    //     if (isset($meta['key'])) {
+    //         $model = new $class;
 
-            $query = $model->newQueryForRestoration($meta['key']);
+    //         if (isset($meta['connection'])) {
+    //             $model->setConnection($meta['connection']);
+    //         }
 
-            if (isset($meta['relations'])) {
-                $query->with($meta['relations']);
-            }
+    //         $query = $model->newQueryForRestoration($meta['key']);
 
-            $model = $query->first();
-        } else {
-            $model = new $class();
-        }
+    //         if (isset($meta['relations'])) {
+    //             $query->with($meta['relations']);
+    //         }
 
-        return $model;
-    }
+    //         $model = $query->first();
+    //     } else {
+    //         $model = new $class();
+    //     }
+
+    //     return $model;
+    // }
 
     protected function setDataOnModel(Model $model, $data)
     {
